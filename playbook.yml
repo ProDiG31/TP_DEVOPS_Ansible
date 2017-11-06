@@ -1,0 +1,72 @@
+---
+- hosts: all
+  remote_user: root
+
+  vars: 
+
+    http_port: 80
+    max_clients: 200
+
+    nodejs_version: "6.x"
+    npm_config_prefix: "/usr/local/lib/npm"
+    npm_config_unsafe_perm: "false"
+    nodejs_npm_global_packages: []
+    nodejs_package_json_path: ""
+  
+  tasks: 
+   
+    - name: "1/12	- Install Node.js 6.x"
+      apt: 
+        name: nodejs
+        state: latest
+
+    - name: "2/12	- Installing git"
+      apt:
+        name: git
+        state: latest
+
+    - name: "3/12	- Installing Nginx"
+      apt:
+        name: nginx
+        state: latest
+
+    - name: "4/12	- Clonning git repositories from git.mrzee.fr:student/my-node-project.git"
+      git: 
+        repo: 'https://git.mrzee.fr/student/my-node-project.git'
+        dest: /var/www/my-node-project
+
+    - name: "5/12	- Installing curl"
+      apt:
+        name: curl
+        state: latest 
+
+    - name: "6/12	- Instaling Node repository via curl"
+      shell: curl -sL https://deb.nodesource.com/setup_6.x | sh              
+
+    - name: "7/12	- Installing globaly of pm2 node.js package"
+      npm:
+        name: pm2
+        global: yes
+        state: latest   
+
+    - name: "8/12	- Installing node.js package of Json package project"
+      npm:
+        path: /var/www/my-node-project/myapp
+        state: latest
+
+    - name: "9/12	- Npm current version info" 
+      shell: npm -v
+
+    - name: "10/12	- Start pm2 Service"
+      shell: pm2 start /var/www/my-node-project/myapp/bin/www 
+
+    - name: "11/12	- Copying files vhost"
+      copy:
+        src: /var/www/my-node-project/vhost
+        dest: /etc/nginx/sites-enabled/vhost
+        remote_src: yes
+
+    - name: "12/12	- Restarting nginx" 
+      service:
+        name: nginx
+        state: restarted 
